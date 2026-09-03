@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /connection/
+Disallow: /images/
+
+Sitemap: https://omgtechhub.great-site.net/sitemap.xml
