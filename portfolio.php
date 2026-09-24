@@ -301,16 +301,6 @@ if (!isset($omgProjects) || !is_array($omgProjects)) {
     });
   });
 
-  // ── Image placeholder that takes the shape of whatever's inside it ──
-  // No fixed box: the wrap's aspect-ratio is set from the image's own
-  // natural dimensions, so a square design gets a square placeholder and
-  // a wide/tall one gets a wide/tall placeholder. CSS min/max-height still
-  // clamp extreme ratios so the modal never breaks layout.
-  function setModalAspect(ratio){
-    var wrap = document.getElementById('omg-modal-image-wrap');
-    if (wrap) wrap.style.aspectRatio = ratio;
-  }
-
   // ── Open modal ────────────────────────────────────────
   function openModal(idx){
     savedScroll = window.scrollY || window.pageYOffset;
@@ -320,6 +310,7 @@ if (!isset($omgProjects) || !is_array($omgProjects)) {
     var p = projects[idx];
     currentImgSrc = p.image || '';
 
+    var wrap        = document.getElementById('omg-modal-image-wrap');
     var imgBg       = document.getElementById('omg-modal-img-bg');
     var iframeWrap  = document.getElementById('omg-modal-iframe-wrap');
     var iframe      = document.getElementById('omg-modal-iframe');
@@ -334,6 +325,10 @@ if (!isset($omgProjects) || !is_array($omgProjects)) {
     if (videoWrap)   videoWrap.style.display   = 'none';
     if (videoIframe) videoIframe.src           = '';
     if (liveLink)    liveLink.style.display    = 'none';
+    // A real design image gets no fixed ratio — the card just hugs it
+    // (set in renderSubImage once it's loaded). Only embeds/placeholders
+    // that have no natural size of their own need one forced here.
+    if (wrap) wrap.classList.remove('is-embed');
 
     if (p.cat === 'motion' && p.url) {
       var videoSrc = p.url;
@@ -344,14 +339,14 @@ if (!isset($omgProjects) || !is_array($omgProjects)) {
       if (videoIframe) videoIframe.src        = videoSrc;
       if (videoWrap)   videoWrap.style.display = 'block';
       imgBg.style.display = 'none';
-      setModalAspect('16 / 9');
+      if (wrap) wrap.classList.add('is-embed');
 
     } else if (p.cat === 'web' && p.url) {
       if (iframeWrap) iframeWrap.style.display = 'block';
       if (iframe)     iframe.src               = p.url;
       imgBg.style.display = 'none';
       if (liveLink) { liveLink.href = p.url; liveLink.style.display = 'flex'; }
-      setModalAspect('16 / 9');
+      if (wrap) wrap.classList.add('is-embed');
 
     } else {
       // A project can carry several images (`images`); fall back to the
@@ -364,7 +359,7 @@ if (!isset($omgProjects) || !is_array($omgProjects)) {
       } else {
         imgBg.style.background = p.bg;
         imgBg.innerHTML = '';
-        setModalAspect('4 / 3');
+        if (wrap) wrap.classList.add('is-embed');
       }
     }
 
@@ -404,40 +399,64 @@ if (!isset($omgProjects) || !is_array($omgProjects)) {
   }
 
   // ── Sub-carousel: cycles a single project's own images, only on click ──
+  // Builds the frame from scratch on open; navigation afterward re-uses
+  // the same <img> and just fades its src, like the sibling site does.
   function renderSubImage(title){
     var imgBg = document.getElementById('omg-modal-img-bg');
     var src   = subImages[subIndex];
     currentImgSrc = src;
 
     imgBg.innerHTML = '';
-
     var img = document.createElement('img');
+    img.id  = 'omg-modal-sub-img';
     img.alt = title;
-    var applyAspect = function(){
-      if (img.naturalWidth && img.naturalHeight) {
-        setModalAspect(img.naturalWidth + ' / ' + img.naturalHeight);
-      }
-    };
-    img.addEventListener('load', applyAspect);
     img.src = src;
-    if (img.complete) applyAspect(); // already cached — no load event coming
     imgBg.appendChild(img);
 
     if (subImages.length > 1) {
+      var navHtml =
+        '<button type="button" class="omg-modal-sub-nav omg-modal-sub-prev" onclick="event.stopPropagation();omgModalSubNav(-1)" aria-label="Previous image">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>' +
+        '<button type="button" class="omg-modal-sub-nav omg-modal-sub-next" onclick="event.stopPropagation();omgModalSubNav(1)" aria-label="Next image">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>';
       var dotsHtml = '<div class="omg-modal-carousel-dots">' + subImages.map(function(_, i){
         return '<button type="button" class="omg-modal-carousel-dot' + (i === subIndex ? ' active' : '') +
-          '" onclick="event.stopPropagation();omgModalSubGo(' + i + ')" aria-label="Image ' + (i + 1) + '"></button>';
+          '" onclick="event.stopPropagation();omgModalSubGo(' + i + ')" aria-label="Go to image ' + (i + 1) + '"></button>';
       }).join('') + '</div>';
-      imgBg.insertAdjacentHTML('beforeend', dotsHtml);
+      imgBg.insertAdjacentHTML('beforeend', navHtml + dotsHtml);
     }
 
     var dl = document.getElementById('omg-modal-download');
     if (dl) dl.href = src;
   }
 
+  // Fade-swap to a different image in the same project — click-triggered
+  // only, never automatic.
+  function updateSubImage(){
+    var src = subImages[subIndex];
+    currentImgSrc = src;
+    var img = document.getElementById('omg-modal-sub-img');
+    if (img) {
+      img.classList.add('fading');
+      setTimeout(function(){
+        img.src = src;
+        img.classList.remove('fading');
+      }, 150);
+    }
+    document.querySelectorAll('#omg-modal-img-bg .omg-modal-carousel-dot').forEach(function(d, i){
+      d.classList.toggle('active', i === subIndex);
+    });
+    var dl = document.getElementById('omg-modal-download');
+    if (dl) dl.href = src;
+  }
+
   window.omgModalSubGo = function(i){
     subIndex = i;
-    renderSubImage(projects[current].title);
+    updateSubImage();
+  };
+  window.omgModalSubNav = function(dir){
+    subIndex = (subIndex + dir + subImages.length) % subImages.length;
+    updateSubImage();
   };
 
   function closeModal(){

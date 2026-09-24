@@ -3825,38 +3825,39 @@ p, span, li, td, th, label, input, textarea, select,
   to   { opacity: 1; transform: translate(-50%, -50%) scale(1) translateY(0); }
 }
 
-/* ── Image section ──
-   No forced crop, no fixed box: aspect-ratio is set per-image (via JS,
-   from the image's own natural width/height) so a square design gets a
-   square placeholder and a wide/tall one gets a wide/tall placeholder —
-   the design is never cropped or force-fit. min/max-height only clamp
-   extreme ratios so the modal itself never breaks layout; object-fit:
-   contain is a safety net for that edge case, not the normal path. */
+/* ── Image section: a real card placeholder ──
+   Same pattern as the project-media-frame on the sibling portfolio site:
+   no fixed height, no forced aspect-ratio, no cropping. The frame is a
+   flex box that simply hugs whatever image is inside it — a square
+   design gets a square card, a tall/wide one gets a tall/wide card — and
+   the image is never upscaled past its own native resolution. Only
+   img's max-height clamps an extreme design so the modal can't blow out. */
 .omg-modal-image-wrap {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 3;
-  min-height: 240px;
-  max-height: 62vh;
   flex-shrink: 0;
-  overflow: hidden;
-  cursor: zoom-in;
-  background: #0a0a0a;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: #0a0a0a;
+  cursor: zoom-in;
+  padding: clamp(16px, 4vw, 40px);
 }
 .omg-modal-image-wrap img {
-  max-width: 100%;
-  max-height: 100%;
+  display: block;
   width: auto;
   height: auto;
+  max-width: 100%;
+  max-height: min(58vh, 560px);
   object-fit: contain;
-  display: block;
-  transition: transform 0.5s ease, opacity 0.2s ease;
+  border-radius: 8px;
+  transition: opacity 0.2s ease;
 }
 .omg-modal-image-wrap img.fading { opacity: 0; }
-.omg-modal-image-wrap:hover img { transform: scale(1.03); }
+/* Video embeds, live-site iframes, and color-only placeholders have no
+   natural size of their own — those get a fixed 16:9 frame instead of
+   hugging content. Real design images never get this class. */
+.omg-modal-image-wrap.is-embed { aspect-ratio: 16 / 9; padding: 0; }
 .omg-modal-image-wrap .omg-modal-img-gradient {
   width: 100%;
   height: 100%;
@@ -3864,6 +3865,27 @@ p, span, li, td, th, label, input, textarea, select,
 }
 
 /* Click-only sub-carousel for projects with more than one image */
+.omg-modal-sub-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 3;
+  transition: background 0.2s, transform 0.2s;
+}
+.omg-modal-sub-nav:hover { background: var(--primary); border-color: var(--primary); transform: translateY(-50%) scale(1.08); }
+.omg-modal-sub-prev { left: 14px; }
+.omg-modal-sub-next { right: 14px; }
 .omg-modal-carousel-dots {
   position: absolute;
   bottom: 16px;
@@ -4080,7 +4102,9 @@ p, span, li, td, th, label, input, textarea, select,
 
 /* ── Responsive ── */
 @media (max-width: 700px) {
-  .omg-modal-image-wrap { min-height: 180px; max-height: 44vh; }
+  .omg-modal-image-wrap { padding: 14px; }
+  .omg-modal-image-wrap img { max-height: 40vh; }
+  .omg-modal-sub-nav { width: 32px; height: 32px; }
   .omg-modal-body { padding: 20px; }
   .omg-modal-title { font-size: 1.3rem; }
   .omg-case-sections { grid-template-columns: 1fr; }
