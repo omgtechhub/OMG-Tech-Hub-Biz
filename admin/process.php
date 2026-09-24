@@ -28,8 +28,10 @@ if ($action === 'delete' && $id) {
 if ($action === 'delete_project' && $id) {
     $project = project_by_id($id);
     if ($project) {
-        if (!empty($project['image']) && file_exists(dirname(__DIR__) . '/' . $project['image'])) {
-            @unlink(dirname(__DIR__) . '/' . $project['image']);
+        foreach (project_images($project) as $img) {
+            if ($img && file_exists(dirname(__DIR__) . '/' . $img)) {
+                @unlink(dirname(__DIR__) . '/' . $img);
+            }
         }
         portfolio_delete($id);
         $_SESSION['flash'] = 'Project deleted.';

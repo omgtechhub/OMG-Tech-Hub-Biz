@@ -40,6 +40,7 @@ $format = fn($p) => [
     'title'      => $p['title']      ?? '',
     'category'   => $p['category']   ?? '',
     'image'      => $p['image']      ?? '',
+    'images'     => project_images($p),
     'client'     => $p['client']     ?? '',
     'year'       => $p['year']       ?? null,
 ];

@@ -267,6 +267,8 @@ if (!isset($omgProjects) || !is_array($omgProjects)) {
   var projects = <?php echo json_encode(array_values($omgProjects)); ?>;
   var current  = 0;
   var currentImgSrc = '';
+  var subImages = []; // images belonging to the currently-open project
+  var subIndex  = 0;  // which of those is on screen
 
   var modal    = document.getElementById('omg-case-modal');
   var backdrop = document.getElementById('omg-modal-backdrop');
@@ -340,9 +342,13 @@ if (!isset($omgProjects) || !is_array($omgProjects)) {
       if (liveLink) { liveLink.href = p.url; liveLink.style.display = 'flex'; }
 
     } else {
-      if (p.image) {
+      // A project can carry several images (`images`); fall back to the
+      // single `image` field for anything saved before that existed.
+      subImages = (p.images && p.images.length) ? p.images : (p.image ? [p.image] : []);
+      subIndex  = 0;
+      if (subImages.length) {
         imgBg.style.background = 'none';
-        imgBg.innerHTML = '<img src="' + p.image + '" alt="' + p.title + '" style="width:100%;height:100%;object-fit:cover;display:block;">';
+        renderSubImage(p.title);
       } else {
         imgBg.style.background = p.bg;
         imgBg.innerHTML = '';
@@ -350,9 +356,9 @@ if (!isset($omgProjects) || !is_array($omgProjects)) {
     }
 
     var dl = document.getElementById('omg-modal-download');
-    if (dl) { dl.href = p.image || '#'; dl.style.display = (p.image && p.cat !== 'web') ? 'flex' : 'none'; }
+    if (dl) dl.style.display = (subImages.length && p.cat !== 'web') ? 'flex' : 'none';
     var exp = document.getElementById('omg-modal-expand');
-    if (exp) exp.style.display = (p.image && p.cat !== 'web') ? 'flex' : 'none';
+    if (exp) exp.style.display = (subImages.length && p.cat !== 'web') ? 'flex' : 'none';
     var ctr = document.getElementById('omg-modal-counter');
     if (ctr) ctr.textContent = (idx + 1) + ' / ' + projects.length;
 
@@ -383,6 +389,30 @@ if (!isset($omgProjects) || !is_array($omgProjects)) {
     modal.style.display = 'block';
     panel.scrollTop = 0;
   }
+
+  // ── Sub-carousel: cycles a single project's own images, only on click ──
+  function renderSubImage(title){
+    var imgBg = document.getElementById('omg-modal-img-bg');
+    var src   = subImages[subIndex];
+    currentImgSrc = src;
+
+    var dotsHtml = '';
+    if (subImages.length > 1) {
+      dotsHtml = '<div class="omg-modal-carousel-dots">' + subImages.map(function(_, i){
+        return '<button type="button" class="omg-modal-carousel-dot' + (i === subIndex ? ' active' : '') +
+          '" onclick="event.stopPropagation();omgModalSubGo(' + i + ')" aria-label="Image ' + (i + 1) + '"></button>';
+      }).join('') + '</div>';
+    }
+    imgBg.innerHTML = '<img src="' + src + '" alt="' + title + '">' + dotsHtml;
+
+    var dl = document.getElementById('omg-modal-download');
+    if (dl) dl.href = src;
+  }
+
+  window.omgModalSubGo = function(i){
+    subIndex = i;
+    renderSubImage(projects[current].title);
+  };
 
   function closeModal(){
     var iframe = document.getElementById('omg-modal-iframe');
