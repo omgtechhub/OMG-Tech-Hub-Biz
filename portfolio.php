@@ -301,6 +301,16 @@ if (!isset($omgProjects) || !is_array($omgProjects)) {
     });
   });
 
+  // ── Image placeholder that takes the shape of whatever's inside it ──
+  // No fixed box: the wrap's aspect-ratio is set from the image's own
+  // natural dimensions, so a square design gets a square placeholder and
+  // a wide/tall one gets a wide/tall placeholder. CSS min/max-height still
+  // clamp extreme ratios so the modal never breaks layout.
+  function setModalAspect(ratio){
+    var wrap = document.getElementById('omg-modal-image-wrap');
+    if (wrap) wrap.style.aspectRatio = ratio;
+  }
+
   // ── Open modal ────────────────────────────────────────
   function openModal(idx){
     savedScroll = window.scrollY || window.pageYOffset;
@@ -334,12 +344,14 @@ if (!isset($omgProjects) || !is_array($omgProjects)) {
       if (videoIframe) videoIframe.src        = videoSrc;
       if (videoWrap)   videoWrap.style.display = 'block';
       imgBg.style.display = 'none';
+      setModalAspect('16 / 9');
 
     } else if (p.cat === 'web' && p.url) {
       if (iframeWrap) iframeWrap.style.display = 'block';
       if (iframe)     iframe.src               = p.url;
       imgBg.style.display = 'none';
       if (liveLink) { liveLink.href = p.url; liveLink.style.display = 'flex'; }
+      setModalAspect('16 / 9');
 
     } else {
       // A project can carry several images (`images`); fall back to the
@@ -352,6 +364,7 @@ if (!isset($omgProjects) || !is_array($omgProjects)) {
       } else {
         imgBg.style.background = p.bg;
         imgBg.innerHTML = '';
+        setModalAspect('4 / 3');
       }
     }
 
@@ -396,14 +409,27 @@ if (!isset($omgProjects) || !is_array($omgProjects)) {
     var src   = subImages[subIndex];
     currentImgSrc = src;
 
-    var dotsHtml = '';
+    imgBg.innerHTML = '';
+
+    var img = document.createElement('img');
+    img.alt = title;
+    var applyAspect = function(){
+      if (img.naturalWidth && img.naturalHeight) {
+        setModalAspect(img.naturalWidth + ' / ' + img.naturalHeight);
+      }
+    };
+    img.addEventListener('load', applyAspect);
+    img.src = src;
+    if (img.complete) applyAspect(); // already cached — no load event coming
+    imgBg.appendChild(img);
+
     if (subImages.length > 1) {
-      dotsHtml = '<div class="omg-modal-carousel-dots">' + subImages.map(function(_, i){
+      var dotsHtml = '<div class="omg-modal-carousel-dots">' + subImages.map(function(_, i){
         return '<button type="button" class="omg-modal-carousel-dot' + (i === subIndex ? ' active' : '') +
           '" onclick="event.stopPropagation();omgModalSubGo(' + i + ')" aria-label="Image ' + (i + 1) + '"></button>';
       }).join('') + '</div>';
+      imgBg.insertAdjacentHTML('beforeend', dotsHtml);
     }
-    imgBg.innerHTML = '<img src="' + src + '" alt="' + title + '">' + dotsHtml;
 
     var dl = document.getElementById('omg-modal-download');
     if (dl) dl.href = src;
