@@ -10,6 +10,46 @@ require_once __DIR__ . '/includes/portfolio-data.php';
 if (!isset($omgProjects) || !is_array($omgProjects)) {
   $omgProjects = [];
 }
+
+// Merge in projects published through the admin panel (data/portfolio.json),
+// reshaped to match the hand-authored array above so the grid, filters, and
+// case-study modal treat both sources identically.
+require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/db.php';
+$omgCategoryMap = [
+  'Graphic Design'  => 'graphic',
+  'Web Development' => 'web',
+  'UI/UX Design'    => 'uiux',
+  'Motion Design'   => 'motion',
+];
+foreach (portfolio_all(true) as $u) {
+  $cat = $omgCategoryMap[$u['category'] ?? ''] ?? 'graphic';
+  $tagline = trim(($u['client'] ?? '') . ((!empty($u['client']) && !empty($u['year'])) ? ' · ' : '') . ($u['year'] ?? ''));
+  $omgProjects[] = [
+    'id'        => $u['id'],
+    'cat'       => $cat,
+    'cat_label' => $u['category'] ?? '',
+    'bg'        => 'linear-gradient(145deg,#1a1a1a 0%,#333 100%)',
+    'image'     => $u['image'] ?? '',
+    'images'    => project_images($u),
+    'url'       => $u['url'] ?? '',
+    'title'     => $u['title'] ?? '',
+    'tagline'   => $tagline,
+    'brief'     => '',
+    'problem'   => $u['challenge'] ?? '',
+    'process'   => '',
+    'solution'  => $u['solution'] ?? '',
+    'output'    => !empty($u['results']) ? implode(', ', $u['results']) : '',
+  ];
+}
+
+// Counts used by the hero stat and filter pills — computed from the final
+// merged list so they stay correct as admin uploads are added.
+$omgTotalCount = count($omgProjects);
+$omgCatCounts  = ['graphic' => 0, 'web' => 0, 'uiux' => 0, 'motion' => 0];
+foreach ($omgProjects as $p) {
+  if (isset($omgCatCounts[$p['cat']])) $omgCatCounts[$p['cat']]++;
+}
 ?>
 
 <main id="main-content">
@@ -29,12 +69,12 @@ if (!isset($omgProjects) || !is_array($omgProjects)) {
         Projects That <span class="highlight">Define</span> Standards
       </h1>
       <p class="section-subtitle reveal" style="max-width:560px;margin-bottom:36px;">
-        32 premium projects delivered across branding, web, UI/UX, and motion — each one crafted to perform.
+        <?php echo $omgTotalCount; ?> premium projects delivered across branding, web, UI/UX, and motion — each one crafted to perform.
       </p>
       <!-- Stats -->
       <div class="portfolio-hero-stats reveal">
         <div>
-          <div class="portfolio-hero-stat-num">32</div>
+          <div class="portfolio-hero-stat-num"><?php echo $omgTotalCount; ?></div>
           <div class="portfolio-hero-stat-label">Projects</div>
         </div>
         <div>
@@ -58,19 +98,19 @@ if (!isset($omgProjects) || !is_array($omgProjects)) {
       <!-- Filter Buttons -->
       <div class="omg-portfolio-filters reveal" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:48px;">
         <button class="omg-filter-btn active" data-filter="all">
-          All Work <span class="omg-filter-count">32</span>
+          All Work <span class="omg-filter-count"><?php echo $omgTotalCount; ?></span>
         </button>
         <button class="omg-filter-btn" data-filter="graphic">
-          Graphic Design <span class="omg-filter-count">8</span>
+          Graphic Design <span class="omg-filter-count"><?php echo $omgCatCounts['graphic']; ?></span>
         </button>
         <button class="omg-filter-btn" data-filter="web">
-          Web Dev <span class="omg-filter-count">4</span>
+          Web Dev <span class="omg-filter-count"><?php echo $omgCatCounts['web']; ?></span>
         </button>
         <button class="omg-filter-btn" data-filter="uiux">
-          UI/UX Design <span class="omg-filter-count">8</span>
+          UI/UX Design <span class="omg-filter-count"><?php echo $omgCatCounts['uiux']; ?></span>
         </button>
         <button class="omg-filter-btn" data-filter="motion">
-          Motion Design <span class="omg-filter-count">12</span>
+          Motion Design <span class="omg-filter-count"><?php echo $omgCatCounts['motion']; ?></span>
         </button>
       </div>
 
@@ -319,7 +359,7 @@ if (!isset($omgProjects) || !is_array($omgProjects)) {
     var liveLink    = document.getElementById('omg-modal-live-link');
 
     // Reset all media panels
-    imgBg.style.display      = 'block';
+    imgBg.style.display      = 'flex';
     if (iframeWrap)  iframeWrap.style.display  = 'none';
     if (iframe)      iframe.src                = '';
     if (videoWrap)   videoWrap.style.display   = 'none';
@@ -380,11 +420,21 @@ if (!isset($omgProjects) || !is_array($omgProjects)) {
       if (caseSections) caseSections.style.display = 'none';
     } else {
       if (caseSections) caseSections.style.display = '';
-      document.getElementById('omg-modal-brief').textContent    = p.brief    || '';
-      document.getElementById('omg-modal-problem').textContent  = p.problem  || '';
-      document.getElementById('omg-modal-process').textContent  = p.process  || '';
-      document.getElementById('omg-modal-solution').textContent = p.solution || '';
-      document.getElementById('omg-modal-output').textContent   = p.output   || '';
+      // Admin-uploaded projects only fill in a subset of these five
+      // write-up fields — hide whichever section has nothing to show
+      // instead of rendering an empty labelled box.
+      [
+        ['omg-modal-brief',    p.brief],
+        ['omg-modal-problem',  p.problem],
+        ['omg-modal-process',  p.process],
+        ['omg-modal-solution', p.solution],
+        ['omg-modal-output',   p.output]
+      ].forEach(function(pair){
+        var el = document.getElementById(pair[0]);
+        if (!el) return;
+        el.textContent = pair[1] || '';
+        el.closest('.omg-case-section').style.display = pair[1] ? '' : 'none';
+      });
     }
 
     if (prevBtn) prevBtn.disabled = idx === 0;
@@ -471,8 +521,11 @@ if (!isset($omgProjects) || !is_array($omgProjects)) {
   // ── Card clicks ───────────────────────────────────────
   items.forEach(function(item){
     item.addEventListener('click', function(){
-      var id  = parseInt(item.dataset.id);
-      var idx = projects.findIndex(function(p){ return p.id === id; });
+      var id  = item.dataset.id;
+      // String comparison covers both the static array's numeric ids and
+      // admin-uploaded projects' string ids ("proj-xxxxxxxx") — parseInt()
+      // on the latter used to yield NaN and silently fail to match.
+      var idx = projects.findIndex(function(p){ return String(p.id) === id; });
       if (idx >= 0) openModal(idx);
     });
     item.addEventListener('keydown', function(e){

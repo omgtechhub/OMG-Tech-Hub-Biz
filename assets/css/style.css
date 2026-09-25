@@ -3854,6 +3854,15 @@ p, span, li, td, th, label, input, textarea, select,
   transition: opacity 0.2s ease;
 }
 .omg-modal-image-wrap img.fading { opacity: 0; }
+/* The image sits inside #omg-modal-img-bg, a full-size div between the
+   wrap and the <img>. Without its own centering that div swallows the
+   wrap's flex centering (it already fills 100%), leaving the image
+   stuck flush to the top-left instead of centered in its frame. */
+#omg-modal-img-bg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 /* Video embeds, live-site iframes, and color-only placeholders have no
    natural size of their own — those get a fixed 16:9 frame instead of
    hugging content. Real design images never get this class. */
