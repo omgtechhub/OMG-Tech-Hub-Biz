@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </form>
 
     <div style="margin-top:24px;text-align:center;">
-      <a href="<?php echo SITE_URL; ?>/dist/" style="font-size:.8rem;color:var(--text-3);transition:color .2s;"
+      <a href="<?php echo SITE_URL; ?>/" style="font-size:.8rem;color:var(--text-3);transition:color .2s;"
          onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-3)'">
         ← Back to website
       </a>

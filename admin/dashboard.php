@@ -128,7 +128,7 @@ layout_sidebar('dashboard');
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
             <a href="edit-post.php?id=<?php echo urlencode($p['id']); ?>" class="btn btn-ghost btn-sm"><?php echo svg_edit(); ?> Edit</a>
             <?php if (($p['status'] ?? '') === 'published'): ?>
-            <a href="<?php echo SITE_URL; ?>/dist/#/blog/<?php echo urlencode($p['slug']); ?>" target="_blank" class="btn btn-ghost btn-sm"><?php echo svg_view(); ?> View</a>
+            <a href="<?php echo SITE_URL; ?>/blog/<?php echo urlencode($p['slug']); ?>" target="_blank" class="btn btn-ghost btn-sm"><?php echo svg_view(); ?> View</a>
             <?php endif; ?>
             <form method="post" action="process.php" onsubmit="return confirm('Delete this post permanently?');" style="display:inline;">
               <input type="hidden" name="action" value="delete">
@@ -219,7 +219,7 @@ layout_sidebar('dashboard');
             <div style="display:flex;gap:6px;flex-wrap:wrap;">
               <a href="edit_portfolio.php?id=<?php echo urlencode($p['id']); ?>" class="btn btn-ghost btn-sm"><?php echo svg_edit(); ?> Edit</a>
               <?php if (($p['status'] ?? '') === 'published'): ?>
-              <a href="<?php echo SITE_URL; ?>/dist/#/portfolio/<?php echo urlencode($p['slug']); ?>" target="_blank" class="btn btn-ghost btn-sm"><?php echo svg_view(); ?> View</a>
+              <a href="<?php echo SITE_URL; ?>/portfolio/<?php echo urlencode($p['slug']); ?>" target="_blank" class="btn btn-ghost btn-sm"><?php echo svg_view(); ?> View</a>
               <?php endif; ?>
               <form method="post" action="process.php" onsubmit="return confirm('Delete this project permanently?');" style="display:inline;">
                 <input type="hidden" name="action" value="delete_project">

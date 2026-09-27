@@ -109,7 +109,7 @@ layout_sidebar('');
   <div class="topbar-title">Edit Portfolio Project</div>
   <div class="topbar-actions">
     <?php if (($old['status'] ?? '') === 'published'): ?>
-    <a href="<?php echo SITE_URL; ?>/dist/#/portfolio/<?php echo urlencode($old['slug']); ?>" target="_blank" class="btn btn-ghost btn-sm">
+    <a href="<?php echo SITE_URL; ?>/portfolio/<?php echo urlencode($old['slug']); ?>" target="_blank" class="btn btn-ghost btn-sm">
       <?php echo svg_view(); ?> View Live
     </a>
     <?php endif; ?>

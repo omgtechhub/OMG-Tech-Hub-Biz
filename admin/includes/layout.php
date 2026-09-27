@@ -50,7 +50,7 @@ function layout_sidebar(string $active = 'dashboard'): void {
     </nav>
     <div class="sidebar-divider"></div>
     <div class="sidebar-bottom">
-      <a href="<?php echo SITE_URL; ?>/dist/" target="_blank" class="nav-link">
+      <a href="<?php echo SITE_URL; ?>/" target="_blank" class="nav-link">
         <?php echo svg_eye(); ?> <span>View Website</span>
       </a>
       <button class="nav-link theme-btn" id="theme-toggle-btn" onclick="(function(){var h=document.documentElement;var n=h.getAttribute('data-theme')==='dark'?'light':'dark';h.setAttribute('data-theme',n);localStorage.setItem('omg_admin_theme',n);document.querySelector('.theme-label').textContent=n==='dark'?'Light Mode':'Dark Mode';})()">
