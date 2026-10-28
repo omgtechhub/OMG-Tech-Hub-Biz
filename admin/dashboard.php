@@ -1,6 +1,7 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) session_start();
+// config.php starts the session itself, with hardened cookie parameters.
 require_once dirname(__DIR__) . '/includes/config.php';
+require_once dirname(__DIR__) . '/includes/security.php';
 require_once dirname(__DIR__) . '/includes/db.php';
 require_once 'includes/auth.php';
 require_once 'includes/layout.php';
@@ -132,6 +133,7 @@ layout_sidebar('dashboard');
             <?php endif; ?>
             <form method="post" action="process.php" onsubmit="return confirm('Delete this post permanently?');" style="display:inline;">
               <input type="hidden" name="action" value="delete">
+              <?php echo omg_csrf_field(); ?>
               <input type="hidden" name="id" value="<?php echo htmlspecialchars($p['id']); ?>">
               <button type="submit" class="btn btn-danger btn-sm"><?php echo svg_trash(); ?></button>
             </form>
@@ -223,6 +225,7 @@ layout_sidebar('dashboard');
               <?php endif; ?>
               <form method="post" action="process.php" onsubmit="return confirm('Delete this project permanently?');" style="display:inline;">
                 <input type="hidden" name="action" value="delete_project">
+                <?php echo omg_csrf_field(); ?>
                 <input type="hidden" name="id" value="<?php echo htmlspecialchars($p['id']); ?>">
                 <button type="submit" class="btn btn-danger btn-sm"><?php echo svg_trash(); ?></button>
               </form>

@@ -1,8 +1,13 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) session_start();
+// config.php starts the session itself, with hardened cookie parameters.
 require_once dirname(__DIR__) . '/includes/config.php';
+require_once dirname(__DIR__) . '/includes/security.php';
 require_once dirname(__DIR__) . '/includes/db.php';
 require_once 'includes/auth.php';
+
+// Every POST below creates, edits or deletes something. Without this a page
+// on any other site could drive the panel using your logged-in session.
+omg_csrf_require();
 require_once 'includes/layout.php';
 
 $errors = [];
@@ -38,14 +43,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Image upload
     $image_path = '';
     if (!empty($_FILES['image']['name'])) {
-        $allowed = ['image/jpeg','image/jpg','image/png','image/webp','image/gif'];
-        $max     = 5 * 1024 * 1024;
-        $mime    = mime_content_type($_FILES['image']['tmp_name']);
-        if (!in_array($mime, $allowed))          $errors[] = 'Image must be JPG, PNG, WebP, or GIF.';
+        $max = 5 * 1024 * 1024;
+        // The extension comes from the VERIFIED image type, never from the
+        // uploaded filename (see includes/security.php). A GIF/PHP polyglot
+        // passes a MIME sniff but must never land on disk as .php.
+        $ext = omg_safe_image_ext($_FILES['image']['tmp_name'] ?? '');
+        if ($ext === null)                       $errors[] = 'Image must be a real JPG, PNG, WebP, or GIF file.';
         elseif ($_FILES['image']['size'] > $max) $errors[] = 'Image must be under 5MB.';
         else {
-            $ext  = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
-            $name = uniqid('post_', true) . '.' . strtolower($ext);
+            $name = omg_upload_filename('post_', $ext);
             if (!is_dir(UPLOAD_DIR)) mkdir(UPLOAD_DIR, 0755, true);
             if (move_uploaded_file($_FILES['image']['tmp_name'], UPLOAD_DIR . $name)) {
                 $image_path = UPLOAD_URL . $name;
@@ -104,6 +110,7 @@ layout_sidebar('create-post');
   <?php endif; ?>
 
   <form method="post" enctype="multipart/form-data">
+    <?php echo omg_csrf_field(); ?>
     <div class="post-form-grid" style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;">
 
       <!-- Main content -->

@@ -18,6 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+require_once dirname(__DIR__) . '/includes/config.php';
+require_once dirname(__DIR__) . '/includes/security.php';
 require_once dirname(__DIR__) . '/includes/mail_config.php';
 require_once dirname(__DIR__) . '/vendor/phpmailer/src/Exception.php';
 require_once dirname(__DIR__) . '/vendor/phpmailer/src/PHPMailer.php';
@@ -26,6 +28,17 @@ require_once dirname(__DIR__) . '/vendor/phpmailer/src/SMTP.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
+
+// ── Rate limit ───────────────────────────────────────────────────
+// This endpoint sends mail through our own SMTP account. Unthrottled, it is a
+// free relay for spam, which gets the domain blacklisted and the hosting
+// account suspended.
+if (!omg_rate_limit('contact', 5, 3600)) {
+    ob_end_clean();
+    http_response_code(429);
+    echo json_encode(['ok' => false, 'error' => 'Too many messages from this address. Please try again later, or reach us on WhatsApp.']);
+    exit;
+}
 
 // ── Parse input ─────────────────────────────────────────────────
 $input = json_decode(file_get_contents('php://input'), true);

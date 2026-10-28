@@ -1,9 +1,26 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import DOMPurify from 'dompurify';
 import PageWrapper from '../components/PageWrapper';
 import { blogPosts } from '../data/blogPosts';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
+
+// Post bodies are authored HTML, so they must be injected as HTML. They come
+// from the admin panel — which is exactly what an attacker goes after — and a
+// stored payload would otherwise execute for every reader of the blog.
+// Sanitising here means a compromised post can never become script execution.
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+  if (node.tagName === 'A' && node.getAttribute('target') === '_blank') {
+    node.setAttribute('rel', 'noopener noreferrer');
+  }
+});
+
+const sanitize = (html) =>
+  DOMPurify.sanitize(html ?? '', {
+    USE_PROFILES: { html: true },   // HTML only: no SVG/MathML attack surface
+    ADD_ATTR: ['target'],           // existing posts link out with target=_blank
+  });
 
 function formatDate(str) {
   if (!str) return '';
@@ -236,7 +253,7 @@ export default function BlogPostPage() {
       {/* Body */}
       <section style={{ padding:'80px 20px',background:'var(--t-bg)' }}>
         <div className="prose" style={{ maxWidth:'740px',margin:'0 auto' }}
-          dangerouslySetInnerHTML={{ __html: post.content || `<p>${post.excerpt || ''}</p>` }}
+          dangerouslySetInnerHTML={{ __html: sanitize(post.content || `<p>${post.excerpt || ''}</p>`) }}
         />
       </section>
 

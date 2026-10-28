@@ -10,6 +10,17 @@ env/*
 !.env.development
 Details.txt
 
+# Customer data & runtime state
+# contacts.json and newsletter.json hold subscriber email addresses, and this
+# repository is public. orders.json additionally holds names, phone numbers,
+# IPs and payment references. None of it belongs in version control, and all
+# of it is rewritten by the live site anyway.
+data/contacts.json
+data/newsletter.json
+data/orders.json
+data/ratelimit/
+data/.orders.lock
+
 # Dependencies & Build Output
 node_modules/
 dist/
@@ -50,3 +61,4 @@ tmp/
 temp/
 *.tmp
 *.bak
+zz_*

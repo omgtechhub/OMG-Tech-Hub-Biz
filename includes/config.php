@@ -36,7 +36,22 @@ define('PORTFOLIO_CATEGORIES', ['Graphic Design', 'Web Development', 'UI/UX Desi
 
 // ── Session ───────────────────────────────────────────────
 if (session_status() === PHP_SESSION_NONE) {
-    ini_set('session.cookie_httponly', 1);
     ini_set('session.use_strict_mode', 1);
+    ini_set('session.use_only_cookies', 1);
+
+    // Mark the cookie Secure only when the request really arrived over HTTPS.
+    // Forcing it on plain-HTTP local XAMPP would stop the cookie being set at
+    // all, and you would never stay logged in.
+    $omgHttps = (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off')
+             || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')
+             || ((string) ($_SERVER['SERVER_PORT'] ?? '') === '443');
+
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path'     => '/',
+        'httponly' => true,       // JavaScript can never read the session id
+        'secure'   => $omgHttps,  // never sent over plain HTTP in production
+        'samesite' => 'Lax',      // blocks cross-site POST in modern browsers
+    ]);
     session_start();
 }

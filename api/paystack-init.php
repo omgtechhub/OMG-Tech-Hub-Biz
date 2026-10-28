@@ -35,6 +35,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 require_once dirname(__DIR__) . '/includes/config.php';
 require_once dirname(__DIR__) . '/includes/db.php';
 require_once dirname(__DIR__) . '/includes/paystack.php';
+require_once dirname(__DIR__) . '/includes/security.php';
+
+// Each call writes an order and hits the Paystack API. Generous enough that a
+// customer retrying a failed card never notices; tight enough to stop a script
+// filling orders.json.
+if (!omg_rate_limit('paystack_init', 12, 3600)) {
+    out(429, ['ok' => false, 'error' => 'Too many checkout attempts. Please wait a few minutes and try again.']);
+}
 
 if (!paystack_configured()) {
     out(503, [

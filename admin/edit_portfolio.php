@@ -1,8 +1,13 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) session_start();
+// config.php starts the session itself, with hardened cookie parameters.
 require_once dirname(__DIR__) . '/includes/config.php';
+require_once dirname(__DIR__) . '/includes/security.php';
 require_once dirname(__DIR__) . '/includes/db.php';
 require_once 'includes/auth.php';
+
+// Every POST below creates, edits or deletes something. Without this a page
+// on any other site could drive the panel using your logged-in session.
+omg_csrf_require();
 require_once 'includes/layout.php';
 
 $id      = trim($_GET['id'] ?? '');
@@ -40,19 +45,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $newImages = [];
     if (empty($errors) && !empty($_FILES['images']['name'][0])) {
-        $allowed = ['image/jpeg','image/jpg','image/png','image/webp','image/gif'];
-        $max     = 10 * 1024 * 1024;
+        $max = 10 * 1024 * 1024;
         if (!is_dir(PORTFOLIO_UPLOAD_DIR)) mkdir(PORTFOLIO_UPLOAD_DIR, 0755, true);
         $count = count($_FILES['images']['name']);
         for ($i = 0; $i < $count; $i++) {
             if ($_FILES['images']['error'][$i] === UPLOAD_ERR_NO_FILE) continue;
             if ($_FILES['images']['error'][$i] !== UPLOAD_ERR_OK) { $errors[] = 'One of the images failed to upload.'; continue; }
-            $tmp  = $_FILES['images']['tmp_name'][$i];
-            $mime = mime_content_type($tmp);
-            if (!in_array($mime, $allowed)) { $errors[] = 'Images must be JPG, PNG, WebP, or GIF.'; continue; }
+            $tmp = $_FILES['images']['tmp_name'][$i];
+            // The extension comes from the VERIFIED image type, never from the
+            // uploaded filename (see includes/security.php). A GIF/PHP polyglot
+            // passes a MIME sniff but must never land on disk as .php.
+            $ext = omg_safe_image_ext($tmp);
+            if ($ext === null) { $errors[] = 'Images must be real JPG, PNG, WebP, or GIF files.'; continue; }
             if ($_FILES['images']['size'][$i] > $max) { $errors[] = 'Each image must be under 10MB.'; continue; }
-            $ext  = strtolower(pathinfo($_FILES['images']['name'][$i], PATHINFO_EXTENSION));
-            $name = uniqid('proj_', true) . '.' . $ext;
+            $name = omg_upload_filename('proj_', $ext);
             if (move_uploaded_file($tmp, PORTFOLIO_UPLOAD_DIR . $name)) {
                 $newImages[] = PORTFOLIO_UPLOAD_URL . $name;
             } else {
@@ -67,8 +73,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         // Only now delete the removed files — after every other check passed.
-        foreach ($removeRequested as $rm) {
-            if ($rm && file_exists(dirname(__DIR__) . '/' . $rm)) @unlink(dirname(__DIR__) . '/' . $rm);
+        // Only ever delete files that genuinely belong to THIS project.
+        // $removeRequested is raw POST data: without the intersection it is an
+        // arbitrary-file-delete primitive (remove_images[]=env/.env), and
+        // omg_delete_upload() additionally refuses anything outside uploads/.
+        foreach (array_intersect($images, $removeRequested) as $rm) {
+            omg_delete_upload($rm);
         }
         $tags    = array_values(array_filter(array_map('trim', explode(',', $old['tags']))));
         $results = array_values(array_filter(array_map('trim', explode(',', $old['results']))));
@@ -93,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: dashboard.php#portfolio'); exit;
     } elseif ($newImages) {
         // Validation failed elsewhere — clean up the files we just moved in.
-        foreach ($newImages as $img) @unlink(dirname(__DIR__) . '/' . $img);
+        foreach ($newImages as $img) omg_delete_upload($img);
     }
 }
 
@@ -123,6 +133,7 @@ layout_sidebar('');
   <?php endif; ?>
 
   <form method="post" enctype="multipart/form-data">
+    <?php echo omg_csrf_field(); ?>
     <div class="post-form-grid" style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;">
 
       <!-- Main -->

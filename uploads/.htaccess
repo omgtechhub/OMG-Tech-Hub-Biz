@@ -1,0 +1,41 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  uploads/ holds attacker-influenced files. Nothing in here may ever execute.
+# ─────────────────────────────────────────────────────────────────────────────
+#  The upload handlers now derive the extension from the verified image type,
+#  so a .php should never land here in the first place. This is the second
+#  layer: if a bug ever puts one here, it is served as text, not run.
+
+# ── 1. Turn the interpreter off for this tree ────────────────────────────────
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+
+# ── 2. Refuse to serve anything executable, whatever the server config ───────
+<FilesMatch "(?i)\.(php|php[0-9]?|phps|phtml|phar|inc|cgi|pl|py|rb|sh|exe|dll|htaccess|htpasswd)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# ── 3. Strip any handler a parent config may have attached ───────────────────
+<IfModule mod_mime.c>
+    RemoveHandler .php .php3 .php4 .php5 .php7 .php8 .phps .phtml .phar .cgi .pl
+    RemoveType    .php .php3 .php4 .php5 .php7 .php8 .phps .phtml .phar
+</IfModule>
+SetHandler default-handler
+
+# ── 4. Never let a browser sniff an image into script ────────────────────────
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Content-Disposition "inline"
+</IfModule>
+
+# ── 5. No directory listings ─────────────────────────────────────────────────
+Options -Indexes -ExecCGI

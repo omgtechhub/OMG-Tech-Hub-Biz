@@ -5,8 +5,9 @@
 //  Money itself is settled by Paystack; this is the operational record.
 // ─────────────────────────────────────────────────────────────────────────────
 
-if (session_status() === PHP_SESSION_NONE) session_start();
+// config.php starts the session itself, with hardened cookie parameters.
 require_once dirname(__DIR__) . '/includes/config.php';
+require_once dirname(__DIR__) . '/includes/security.php';
 require_once dirname(__DIR__) . '/includes/db.php';
 require_once 'includes/auth.php';
 require_once 'includes/layout.php';

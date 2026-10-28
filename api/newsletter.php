@@ -20,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 require_once dirname(__DIR__) . '/includes/config.php';
 require_once dirname(__DIR__) . '/includes/db.php';
+require_once dirname(__DIR__) . '/includes/security.php';
 require_once dirname(__DIR__) . '/includes/mail_config.php';
 require_once dirname(__DIR__) . '/vendor/phpmailer/src/Exception.php';
 require_once dirname(__DIR__) . '/vendor/phpmailer/src/PHPMailer.php';
@@ -27,6 +28,16 @@ require_once dirname(__DIR__) . '/vendor/phpmailer/src/SMTP.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+
+// ── Rate limit ───────────────────────────────────────────────────────────────
+// Two emails go out per call, and every call appends to newsletter.json.
+// Unthrottled this is both a spam relay and a way to fill the disk quota.
+if (!omg_rate_limit('newsletter', 3, 3600)) {
+    ob_end_clean();
+    http_response_code(429);
+    echo json_encode(['ok' => false, 'error' => 'Too many requests. Please try again later.']);
+    exit;
+}
 
 // ── Parse & validate ─────────────────────────────────────────────────────────
 $input = json_decode(file_get_contents('php://input'), true);
@@ -204,8 +215,14 @@ foreach ($attempts as [$secure, $port]) {
     }
 }
 
+// Mail delivery state is deliberately NOT reported back to the caller: it
+// tells an attacker whether our SMTP is reachable and working. Log it instead.
+if (!$sentConfirm || !$sentNotify) {
+    error_log(sprintf(
+        '[newsletter] mail partially failed for %s (confirm=%d notify=%d)',
+        $email, (int) $sentConfirm, (int) $sentNotify
+    ));
+}
+
 ob_end_clean();
-echo json_encode([
-    'ok'    => true,
-    'debug' => ['confirm' => $sentConfirm, 'notify' => $sentNotify],
-]);
+echo json_encode(['ok' => true]);

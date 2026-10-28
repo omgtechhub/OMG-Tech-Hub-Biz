@@ -1,6 +1,7 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) session_start();
+// config.php starts the session itself, with hardened cookie parameters.
 require_once dirname(__DIR__) . '/includes/config.php';
+require_once dirname(__DIR__) . '/includes/security.php';
 
 if (!empty($_SESSION[ADMIN_SESSION_KEY])) {
     header('Location: dashboard.php'); exit;
@@ -8,15 +9,36 @@ if (!empty($_SESSION[ADMIN_SESSION_KEY])) {
 
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $user = trim($_POST['username'] ?? '');
-    $pass = trim($_POST['password'] ?? '');
-    if ($user === ADMIN_USER && password_verify($pass, ADMIN_PASS_HASH)) {
-        session_regenerate_id(true);
-        $_SESSION[ADMIN_SESSION_KEY] = true;
-        $_SESSION['omg_admin_user']  = $user;
-        header('Location: dashboard.php'); exit;
+    $wait = omg_login_lock_remaining();
+
+    if ($wait > 0) {
+        // Four free attempts, then 30s doubling to a 15-minute cap. A correct
+        // password clears the counter, so a mistyped password costs nothing.
+        $error = 'Too many failed attempts. Try again in '
+               . ($wait < 60 ? $wait . ' seconds.' : ceil($wait / 60) . ' minute(s).');
+    } elseif (!omg_csrf_valid()) {
+        $error = 'Your session expired. Please try again.';
+    } else {
+        $user = trim($_POST['username'] ?? '');
+        $pass = trim($_POST['password'] ?? '');
+
+        // hash_equals keeps the username comparison timing-safe; password_verify
+        // is already constant-time. An empty hash must never authenticate.
+        $ok = hash_equals(ADMIN_USER, $user)
+           && ADMIN_PASS_HASH !== ''
+           && password_verify($pass, ADMIN_PASS_HASH);
+
+        if ($ok) {
+            omg_login_clear();
+            session_regenerate_id(true);
+            $_SESSION[ADMIN_SESSION_KEY] = true;
+            $_SESSION['omg_admin_user']  = $user;
+            header('Location: dashboard.php'); exit;
+        }
+
+        omg_login_record_failure();
+        $error = 'Invalid username or password.';
     }
-    $error = 'Invalid username or password.';
 }
 ?>
 <!DOCTYPE html>
@@ -48,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <form method="post" autocomplete="on">
+      <?php echo omg_csrf_field(); ?>
       <div class="form-group">
         <label class="form-label" for="username">Username</label>
         <input type="text" id="username" name="username" class="form-input"
