@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import Lenis from '@studio-freight/lenis';
 import { useLocation } from 'react-router-dom';
 import { gsap, ScrollTrigger } from '../lib/animations/gsap';
-import { LENIS_CONFIG } from '../lib/animations/lenis';
+import { LENIS_CONFIG, setLenis } from '../lib/animations/lenis';
 
 export function useLenis() {
   const lenisRef = useRef<Lenis | null>(null);
@@ -14,6 +14,7 @@ export function useLenis() {
 
     const lenis = new Lenis(LENIS_CONFIG);
     lenisRef.current = lenis;
+    setLenis(lenis);
 
     // Keep ScrollTrigger in sync with Lenis scroll position
     lenis.on('scroll', ScrollTrigger.update);
@@ -26,6 +27,7 @@ export function useLenis() {
     return () => {
       gsap.ticker.remove(tick);
       lenis.destroy();
+      setLenis(null);
       lenisRef.current = null;
       document.documentElement.style.scrollBehavior = '';
     };

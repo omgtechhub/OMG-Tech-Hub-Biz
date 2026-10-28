@@ -8,6 +8,8 @@ import ProjectDetailPage from './pages/ProjectDetailPage';
 import AboutPage from './pages/AboutPage';
 import ProcessPage from './pages/ProcessPage';
 import PricingPage from './pages/PricingPage';
+import PayPage from './pages/PayPage';
+import PaymentStatusPage from './pages/PaymentStatusPage';
 import BlogPage from './pages/BlogPage';
 import BlogPostPage from './pages/BlogPostPage';
 import ContactPage from './pages/ContactPage';
@@ -28,6 +30,8 @@ export const router = createBrowserRouter([
       { path: 'about',           element: <AboutPage /> },
       { path: 'process',         element: <ProcessPage /> },
       { path: 'pricing',         element: <PricingPage /> },
+      { path: 'pay',             element: <PayPage /> },
+      { path: 'payment/callback',element: <PaymentStatusPage /> },
       { path: 'blog',            element: <BlogPage /> },
       { path: 'blog/:slug',      element: <BlogPostPage /> },
       { path: 'contact',         element: <ContactPage /> },

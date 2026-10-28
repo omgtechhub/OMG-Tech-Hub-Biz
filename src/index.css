@@ -437,3 +437,53 @@ nav, footer, section, div, a, p, h1, h2, h3, h4, span, input, textarea, select, 
 @media (max-width: 640px) {
   .r-gallery-nav { width: 36px !important; height: 36px !important; }
 }
+/* ─────────────────────────────────────────────────────────────────
+   CHECKOUT / PAYMENTS
+───────────────────────────────────────────────────────────────── */
+
+/* Spinner on the checkout and status pages */
+@keyframes co-spin { to { transform: rotate(360deg); } }
+.co-spin { animation: co-spin 0.7s linear infinite; }
+
+/* Dialog entrance — subtle, and skipped for reduced-motion users */
+@keyframes co-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes co-rise    { from { opacity: 0; transform: translateY(14px) scale(0.985); }
+                        to   { opacity: 1; transform: translateY(0)    scale(1); } }
+.co-backdrop { animation: co-fade-in 0.2s ease-out; }
+.co-dialog   { animation: co-rise 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+
+.co-close:hover  { background: var(--t-hover-bg) !important; color: var(--t-text) !important; }
+.co-submit:hover:not(:disabled) { background: var(--t-accent-h) !important; transform: translateY(-1px); }
+.co-submit:active:not(:disabled) { transform: translateY(0); }
+.co-submit:disabled { cursor: progress !important; }
+
+/* Keyboard users must be able to see where they are, even though the site
+   hides the system cursor in favour of the custom one. */
+.co-dialog :focus-visible,
+.co-submit:focus-visible,
+.co-close:focus-visible {
+  outline: 2px solid var(--t-accent);
+  outline-offset: 2px;
+}
+
+/* Native placeholder colour inside the dialog and the pay form */
+.co-dialog input::placeholder,
+.co-dialog textarea::placeholder { color: var(--t-text-4); }
+
+/* Stack the two-up rows on narrow screens */
+@media (max-width: 520px) {
+  .co-row2 { grid-template-columns: 1fr !important; }
+  .co-pad  { padding-left: 22px !important; padding-right: 22px !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .co-backdrop, .co-dialog { animation: none; }
+  .co-spin { animation-duration: 1.4s; }
+  .co-submit:hover:not(:disabled) { transform: none !important; }
+}
+
+/* The payment hero stays short on purpose: the form is the page. */
+.r-pay-hero { min-height: 38vh; }
+@media (max-width: 767px) {
+  .r-pay-hero { min-height: auto; padding: 118px 24px 40px !important; }
+}

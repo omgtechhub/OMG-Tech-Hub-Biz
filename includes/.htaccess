@@ -1,0 +1,26 @@
+# Block all web access to this folder.
+# Both syntaxes are present on purpose: Apache 2.2 honours Order/Deny, Apache
+# 2.4 honours Require. Shipping only the 2.2 form silently allows everything
+# on a 2.4 server without mod_access_compat.
+
+<IfModule mod_authz_core.c>
+    # Apache 2.4+
+    Require all denied
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+    # Apache 2.2
+    Order deny,allow
+    Deny from all
+</IfModule>
+
+# Belt and braces, in case .htaccess directives are ignored but PHP still runs.
+<FilesMatch "\.(json|php|lock|log)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>

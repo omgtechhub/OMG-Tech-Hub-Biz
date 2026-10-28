@@ -6,6 +6,7 @@ const companyLinks = [
   { to: '/services',  label: 'Services' },
   { to: '/portfolio', label: 'Portfolio' },
   { to: '/pricing',   label: 'Pricing' },
+  { to: '/pay',       label: 'Make a Payment' },
   { to: '/blog',      label: 'Blog' },
   { to: '/contact',   label: 'Contact' },
 ];

@@ -24,6 +24,7 @@ function layout_head(string $title): void { ?>
 function layout_sidebar(string $active = 'dashboard'): void {
   $nav = [
     'dashboard'         => ['Dashboard',         'dashboard.php',         svg_dash()],
+    'payments'          => ['Payments',          'payments.php',          svg_card()],
     'create-post'       => ['New Post',          'create-post.php',       svg_plus()],
     'upload-portfolio'  => ['Upload Portfolio',  'upload_portfolio.php',  svg_plus()],
   ]; ?>
@@ -91,6 +92,7 @@ function layout_foot(): void { echo '</main></div></body></html>'; }
 
 // SVG icons
 function svg_dash():    string { return '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>'; }
+function svg_card():   string { return '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>'; }
 function svg_plus():   string { return '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'; }
 function svg_eye():    string { return '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'; }
 function svg_moon():   string { return '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>'; }

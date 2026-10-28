@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import PageWrapper from '../components/PageWrapper';
 import HeroBackground from '../components/HeroBackground';
 import AnimatedSection, { AnimatedItem } from '../components/AnimatedSection';
+import CheckoutModal from '../components/CheckoutModal';
+import { tierItemId, depositOf, formatNaira } from '../lib/payments';
 
 const serviceCategories = [
   {
@@ -302,18 +304,24 @@ const serviceCategories = [
   },
 ];
 
+// `id` must match a key in includes/catalog.php — that file, not this one,
+// decides what the customer is actually charged.
 const addOns = [
-  { name: 'Logo Design Only', price: '₦80,000+' },
-  { name: 'Landing Page Design & Dev', price: '₦150,000+' },
-  { name: 'Social Media Kit (30 Posts)', price: '₦75,000' },
-  { name: 'Explainer Video Animation', price: '₦200,000+' },
-  { name: 'Packaging Design', price: '₦120,000+' },
-  { name: 'Monthly Design Retainer', price: '₦120,000/m' },
-  { name: 'SEO Audit & Optimisation', price: '₦80,000' },
-  { name: 'Creative Consulting', price: '₦150,000' },
+  { id: 'addon:logo-design',         name: 'Logo Design Only',            amount: 80000,  from: true },
+  { id: 'addon:landing-page',        name: 'Landing Page Design & Dev',   amount: 150000, from: true },
+  { id: 'addon:social-media-kit',    name: 'Social Media Kit (30 Posts)', amount: 75000 },
+  { id: 'addon:explainer-video',     name: 'Explainer Video Animation',   amount: 200000, from: true },
+  { id: 'addon:packaging-design',    name: 'Packaging Design',            amount: 120000, from: true },
+  { id: 'addon:design-retainer',     name: 'Monthly Design Retainer',     amount: 120000, suffix: '/m' },
+  { id: 'addon:seo-audit',           name: 'SEO Audit & Optimisation',    amount: 80000 },
+  { id: 'addon:creative-consulting', name: 'Creative Consulting',         amount: 150000 },
 ];
 
 const faqs = [
+  {
+    q: 'Can I pay online by card?',
+    a: 'Yes. Every package and add-on can be paid for instantly on this page — card, bank transfer, USSD or QR, processed securely by Paystack. You pay the 50% deposit to begin; we never see or store your card details. Already have an invoice? Use the Make a Payment page.',
+  },
   {
     q: 'Do you accept payment in installments?',
     a: 'Yes. We require a 50% deposit to begin, and the remaining balance is due upon completion. For Enterprise projects, custom payment schedules are available.',
@@ -341,9 +349,77 @@ function formatPrice(amount) {
   return '₦' + amount.toLocaleString('en-NG');
 }
 
+// One style for both the Enterprise link and the deposit button, so they stay
+// visually identical whichever element they render as.
+function ctaStyle(isFeatured, isEnterprise) {
+  return {
+    display: 'block',
+    width: '100%',
+    textAlign: 'center',
+    background: isFeatured
+      ? 'var(--t-on-accent)'
+      : isEnterprise
+        ? 'transparent'
+        : 'var(--t-accent)',
+    color: isFeatured
+      ? 'var(--t-accent)'
+      : isEnterprise
+        ? 'var(--t-accent)'
+        : 'var(--t-on-accent)',
+    border: isEnterprise && !isFeatured ? '1px solid var(--t-accent)' : '1px solid transparent',
+    fontWeight: 700,
+    fontSize: '14px',
+    fontFamily: 'Inter, sans-serif',
+    padding: '14px',
+    borderRadius: '10px',
+    textDecoration: 'none',
+    transition: 'opacity 0.2s, transform 0.2s',
+    cursor: 'none',
+    boxSizing: 'border-box',
+  };
+}
+
+const ctaIn = (e) => {
+  e.currentTarget.style.opacity = '0.85';
+  e.currentTarget.style.transform = 'scale(1.02)';
+};
+
+const ctaOut = (e) => {
+  e.currentTarget.style.opacity = '1';
+  e.currentTarget.style.transform = 'scale(1)';
+};
+
 export default function PricingPage() {
   const [isAnnual, setIsAnnual] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
+
+  // The item currently in checkout, or null. Shape: { id, label, fullPrice, billing, note }
+  const [checkout, setCheckout] = useState(null);
+
+  const openTierCheckout = (category, tier) => {
+    const billing = isAnnual ? 'annual' : 'monthly';
+    setCheckout({
+      id:        tierItemId(category.id, tier.name),
+      label:     `${category.title} — ${tier.name}`,
+      fullPrice: isAnnual ? tier.annual : tier.monthly,
+      billing,
+      note:      isAnnual ? 'Annual plan — 20% saving applied.' : 'Monthly plan.',
+    });
+  };
+
+  const openAddOnCheckout = (addOn) => {
+    setCheckout({
+      id:        addOn.id,
+      label:     addOn.name,
+      fullPrice: addOn.amount,
+      billing:   'monthly',
+      note: addOn.from
+        ? 'Starting price — we confirm the final scope and quote any difference before work begins.'
+        : addOn.suffix === '/m'
+          ? 'Billed monthly. Cancel any time with 30 days notice.'
+          : null,
+    });
+  };
 
   return (
     <PageWrapper>
@@ -607,6 +683,21 @@ export default function PricingPage() {
                       )}
                     </div>
 
+                    {/* What you actually pay today */}
+                    {!isEnterprise && (
+                      <p
+                        style={{
+                          color: isFeatured ? 'var(--t-feat-desc)' : 'var(--t-text-3)',
+                          fontSize: '12.5px',
+                          fontWeight: 600,
+                          marginBottom: '16px',
+                          marginTop: '-4px',
+                        }}
+                      >
+                        {formatNaira(depositOf(isAnnual ? tier.annual : tier.monthly))} deposit to start
+                      </p>
+                    )}
+
                     {/* Description */}
                     <p
                       style={{
@@ -671,43 +762,30 @@ export default function PricingPage() {
                       ))}
                     </div>
 
-                    {/* CTA Button */}
-                    <Link
-                      to="/contact"
-                      data-cursor="hover"
-                      style={{
-                        display: 'block',
-                        textAlign: 'center',
-                        background: isFeatured
-                          ? 'var(--t-on-accent)'
-                          : isEnterprise
-                            ? 'transparent'
-                            : 'var(--t-accent)',
-                        color: isFeatured
-                          ? 'var(--t-accent)'
-                          : isEnterprise
-                            ? 'var(--t-accent)'
-                            : 'var(--t-on-accent)',
-                        border: isEnterprise && !isFeatured ? '1px solid var(--t-accent)' : '1px solid transparent',
-                        fontWeight: 700,
-                        fontSize: '14px',
-                        padding: '14px',
-                        borderRadius: '10px',
-                        textDecoration: 'none',
-                        transition: 'opacity 0.2s, transform 0.2s',
-                        cursor: 'none',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.opacity = '0.85';
-                        e.currentTarget.style.transform = 'scale(1.02)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.opacity = '1';
-                        e.currentTarget.style.transform = 'scale(1)';
-                      }}
-                    >
-                      {tier.cta} {isEnterprise ? '→' : '→'}
-                    </Link>
+                    {/* CTA — priced tiers open checkout, Enterprise goes to contact */}
+                    {isEnterprise ? (
+                      <Link
+                        to="/contact"
+                        data-cursor="hover"
+                        style={ctaStyle(isFeatured, true)}
+                        onMouseEnter={ctaIn}
+                        onMouseLeave={ctaOut}
+                      >
+                        {tier.cta} →
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => openTierCheckout(category, tier)}
+                        data-cursor="hover"
+                        aria-label={`Pay ${formatNaira(depositOf(isAnnual ? tier.annual : tier.monthly))} deposit for the ${category.title} ${tier.name} package`}
+                        style={ctaStyle(isFeatured, false)}
+                        onMouseEnter={ctaIn}
+                        onMouseLeave={ctaOut}
+                      >
+                        Pay {formatNaira(depositOf(isAnnual ? tier.annual : tier.monthly))} Deposit →
+                      </button>
+                    )}
                   </div>
                   </AnimatedItem>
                 );
@@ -752,7 +830,7 @@ export default function PricingPage() {
               data-delay="0.2"
               style={{ color: 'var(--t-text-2)', fontSize: '16px', maxWidth: '520px', margin: '0 auto' }}
             >
-              Need something specific? These standalone services can be added to any package or purchased individually.
+              Need something specific? These standalone services can be added to any package or purchased individually — pick one to pay the 50% deposit and get started today.
             </p>
           </div>
 
@@ -764,21 +842,29 @@ export default function PricingPage() {
             }}
           >
             {addOns.map((item, i) => (
-              <div
-                key={item.name}
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => openAddOnCheckout(item)}
                 data-reveal
                 data-delay={i * 0.06}
                 data-cursor="hover"
+                aria-label={`Pay ${formatNaira(depositOf(item.amount))} deposit for ${item.name}`}
                 style={{
                   background: 'var(--t-bg)',
                   border: '1px solid var(--t-border)',
                   borderRadius: '16px',
-                  padding: '28px 32px',
+                  padding: '24px 28px',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   gap: '16px',
+                  textAlign: 'left',
+                  width: '100%',
+                  fontFamily: 'Inter, sans-serif',
+                  cursor: 'none',
                   transition: 'border-color 0.3s, transform 0.3s',
+                  boxSizing: 'border-box',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = 'var(--t-a-border-s)';
@@ -789,26 +875,23 @@ export default function PricingPage() {
                   e.currentTarget.style.transform = 'translateY(0)';
                 }}
               >
-                <span
-                  style={{
-                    color: 'var(--t-text)',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                  }}
-                >
-                  {item.name}
+                <span style={{ display: 'flex', flexDirection: 'column', gap: '5px', minWidth: 0 }}>
+                  <span style={{ color: 'var(--t-text)', fontSize: '15px', fontWeight: 600, lineHeight: 1.4 }}>
+                    {item.name}
+                  </span>
+                  <span style={{ color: 'var(--t-text-3)', fontSize: '12.5px', fontWeight: 600 }}>
+                    {formatNaira(depositOf(item.amount))} deposit to start
+                  </span>
                 </span>
-                <span
-                  style={{
-                    color: 'var(--t-accent)',
-                    fontSize: '15px',
-                    fontWeight: 800,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {item.price}
+                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
+                  <span style={{ color: 'var(--t-accent)', fontSize: '15px', fontWeight: 800, whiteSpace: 'nowrap' }}>
+                    {formatNaira(item.amount)}{item.from ? '+' : ''}{item.suffix || ''}
+                  </span>
+                  <span style={{ color: 'var(--t-accent)', fontSize: '11.5px', fontWeight: 700, letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+                    Pay now →
+                  </span>
                 </span>
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -965,8 +1048,25 @@ export default function PricingPage() {
           >
             Book a Free Consultation
           </Link>
+          <p
+            data-reveal
+            data-delay="0.3"
+            style={{ color: 'var(--t-text-3)', fontSize: '14px', marginTop: '24px', lineHeight: 1.7 }}
+          >
+            Already have an invoice from us?{' '}
+            <Link
+              to="/pay"
+              data-cursor="hover"
+              style={{ color: 'var(--t-accent)', fontWeight: 700, textDecoration: 'none' }}
+            >
+              Pay a specific amount
+            </Link>
+            .
+          </p>
         </div>
       </section>
+
+      {checkout && <CheckoutModal item={checkout} onClose={() => setCheckout(null)} />}
     </PageWrapper>
   );
 }
