@@ -25,8 +25,8 @@ require_once __DIR__ . '/env_loader.php';
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── API Keys ──────────────────────────────────────────────────────────────
-define('PAYSTACK_SECRET_KEY', getenv('PAYSTACK_SECRET_KEY') ?: '');
-define('PAYSTACK_PUBLIC_KEY', getenv('PAYSTACK_PUBLIC_KEY') ?: '');
+define('PAYSTACK_SECRET_KEY', omg_env('PAYSTACK_SECRET_KEY') ?: '');
+define('PAYSTACK_PUBLIC_KEY', omg_env('PAYSTACK_PUBLIC_KEY') ?: '');
 
 // ── Webhook ───────────────────────────────────────────────────────────────
 //  In the Paystack dashboard (Settings → API Keys & Webhooks) set the

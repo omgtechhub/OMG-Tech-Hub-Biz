@@ -65,5 +65,24 @@ if (!function_exists('str_endswith')) {
     }
 }
 
+
+if (!function_exists('omg_env')) {
+    /**
+     * Read a configuration value.
+     *
+     * getenv() alone is not enough: some shared hosts (InfinityFree among
+     * them) disable putenv(), so nothing omg_load_env() sets is ever visible
+     * to getenv(). The loader also writes $_ENV and $_SERVER directly, which
+     * is unaffected, so fall back to those before giving up.
+     */
+    function omg_env(string $key, $default = null) {
+        $v = getenv($key);
+        if ($v !== false && $v !== '') return $v;
+        if (isset($_ENV[$key]) && $_ENV[$key] !== '') return $_ENV[$key];
+        if (isset($_SERVER[$key]) && $_SERVER[$key] !== '') return $_SERVER[$key];
+        return $default;
+    }
+}
+
 // Automatically execute environment loader
 omg_load_env();
