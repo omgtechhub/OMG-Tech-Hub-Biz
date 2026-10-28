@@ -1,0 +1,14 @@
+# Block all web access to this folder. It holds real credentials.
+# Apache does NOT block ".env" by default (only .ht*), so without this a
+# request for /env/.env would be served as plain text.
+
+<IfModule mod_authz_core.c>
+    # Apache 2.4+
+    Require all denied
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+    # Apache 2.2
+    Order deny,allow
+    Deny from all
+</IfModule>

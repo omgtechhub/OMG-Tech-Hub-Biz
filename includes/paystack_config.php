@@ -1,7 +1,12 @@
 <?php
+require_once __DIR__ . '/env_loader.php';
 // ─────────────────────────────────────────────────────────────────────────────
 //  Paystack Credentials  —  OMG Tech Hub
 // ─────────────────────────────────────────────────────────────────────────────
+//  Keys are read from env/.env (see env/.env.example), the same way
+//  config.php and mail_config.php work. Nothing secret lives in this file,
+//  so it is safe to read — but it is still gitignored as a second line of
+//  defence in case someone pastes a key in here.
 //  WHERE TO GET THESE KEYS
 //    1. Log in at  https://dashboard.paystack.com
 //    2. Go to  Settings → API Keys & Webhooks
@@ -20,8 +25,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── API Keys ──────────────────────────────────────────────────────────────
-define('PAYSTACK_SECRET_KEY', 'PASTE_YOUR_SECRET_KEY_HERE');
-define('PAYSTACK_PUBLIC_KEY', 'PASTE_YOUR_PUBLIC_KEY_HERE');
+define('PAYSTACK_SECRET_KEY', getenv('PAYSTACK_SECRET_KEY') ?: '');
+define('PAYSTACK_PUBLIC_KEY', getenv('PAYSTACK_PUBLIC_KEY') ?: '');
 
 // ── Webhook ───────────────────────────────────────────────────────────────
 //  In the Paystack dashboard (Settings → API Keys & Webhooks) set the

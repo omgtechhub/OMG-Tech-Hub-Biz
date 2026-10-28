@@ -4,6 +4,8 @@ env/*
 .env.*
 *.env
 !env/.env.example
+# The deny-all guard must ship: Apache serves .env as plain text otherwise.
+!env/.htaccess
 !.env.example
 !.env.development
 Details.txt
@@ -48,8 +50,3 @@ tmp/
 temp/
 *.tmp
 *.bak
-
-# Paystack credentials — real keys live here, never in the repo.
-# Copy includes/paystack_config.example.php to includes/paystack_config.php
-# and fill it in, or supply the values through env/.env.
-includes/paystack_config.php
